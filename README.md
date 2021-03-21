@@ -1,7 +1,7 @@
 # ID3 from Beatport
 
 ![Maintained][maintained-badge]
-[![License](http://img.shields.io/badge/Licence-GPL-brightgreen.svg)](LICENSE.md)
+[![License](http://img.shields.io/badge/Licence-GPL-brightgreen.svg)](LICENSE)
 
 [![Watch on GitHub][github-watch-badge]][github-watch]
 [![Star on GitHub][github-star-badge]][github-star]
