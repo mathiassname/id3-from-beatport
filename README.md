@@ -1,5 +1,12 @@
 # ID3 from Beatport
 
+![Maintained][maintained-badge]
+[![License](http://img.shields.io/badge/Licence-GPL-brightgreen.svg)](LICENSE.md)
+
+[![Watch on GitHub][github-watch-badge]][github-watch]
+[![Star on GitHub][github-star-badge]][github-star]
+[![Tweet][twitter-badge]][twitter]
+
 Simple script to scrap some ID3 information from Beatport.
 
 I greated this PHP script after I found no solution to tag my songs with valid ID3 tags. I loved [Beatport Pro](https://www.beatport.com/mac/index.html) and the possibility to tag all tracks in my collection. But now, the program is no more available.
@@ -33,3 +40,11 @@ It exists many ways to support free software:
 * Report issues: https://github.com/mathiassname/id3-from-beatport/issues
 * Share *ID3 from Beatport* with your friends
 * Buy me a coffee ☕️: https://www.paypal.com/donate/?hosted_button_id=G5QWZVJSCTRKA 
+
+[github-watch-badge]: https://img.shields.io/github/watchers/mathiassname/id3-from-beatport.svg?style=social
+[github-watch]: https://github.com/mathiassname/id3-from-beatport/watchers
+[github-star-badge]: https://img.shields.io/github/stars/mathiassname/id3-from-beatport.svg?style=social
+[github-star]: https://github.com/mathiassname/id3-from-beatport/stargazers
+[twitter]: https://twitter.com/intent/tweet?text=Check%20out%20ID3%20from%20Beatport!%20https://github.com/mathiassname/id3-from-beatport%20%F0%9F%91%8D
+[twitter-badge]: https://img.shields.io/twitter/url/https/github.com/mathiassname/id3-from-beatport.svg?style=social
+[maintained-badge]: https://img.shields.io/badge/maintained-yes-brightgreen

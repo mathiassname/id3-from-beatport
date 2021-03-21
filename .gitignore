@@ -9,8 +9,8 @@ Thumbs.db
 *.log
 
 # exclude IDEs
-.idea/
-.vscode/
+.idea
+.vscode
 
 # exclude everything
 cache/*
