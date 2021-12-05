@@ -36,6 +36,7 @@ function readTracks($trackDir, $cacheDir)
                     'filename' => $file,
                     'filepath' => $trackDir.$file,
                     'cachepath' => null,
+                    'error' => false,
                 ];
 
                 if (!empty($track['id'])) {
@@ -65,9 +66,11 @@ function getTrack($url)
     curl_setopt($ch, CURLOPT_URL, $url);
 
     $result = curl_exec($ch);
+    $info = curl_getinfo($ch);
+
     curl_close($ch);
 
-    if (!$result) {
+    if (!$result || $info['http_code'] !== 200) {
         return null;
     }
 
@@ -148,7 +151,7 @@ $tracks = readTracks($trackDir, $cacheDir);
 if (!empty($tracks) && count($tracks) > 0) {
     // load beatport pages & information
     echo 'Load beatport pages'."\n";
-    foreach ($tracks as $track) {
+    foreach ($tracks as &$track) {
         echo "\t".$track['filename'].' -> '.$url.$track['id'];
 
         if (!file_exists($track['cachepath'])) {
@@ -156,9 +159,11 @@ if (!empty($tracks) && count($tracks) > 0) {
 
             if (!empty($html)) {
                 file_put_contents($track['cachepath'], $html);
+                echo " -> downloaded";
+            } else {
+                $track['error'] = true;
+                echo " -> ERROR";
             }
-
-            echo " -> downloaded";
         } else {
             echo " -> already exists";
         }
@@ -177,6 +182,11 @@ if (!empty($tracks) && count($tracks) > 0) {
         echo "\t".$track['id'].': ';
 
         $track['information'] = [];
+
+        if ($track['error'] === true) {
+            echo 'ERROR' . "\n";
+            continue;
+        }
 
         // load file
         $dom = new DomDocument;
@@ -275,6 +285,11 @@ if (!empty($tracks) && count($tracks) > 0) {
     foreach ($tracks as &$track) {
         echo "\t".$track['filename'];
 
+        if ($track['error'] === true) {
+            echo ' -> ERROR' . "\n";
+            continue;
+        }
+
         if (isset($track['information']['cover']) && !empty($track['information']['cover'])) {
             echo ' -> '.$track['information']['cover'];
 
@@ -307,6 +322,11 @@ if (!empty($tracks) && count($tracks) > 0) {
     foreach ($tracks as &$track) {
         echo "\t".$track['filename'];
 
+        if ($track['error'] === true) {
+            echo ' -> ERROR' . "\n";
+            continue;
+        }
+
         $newFilename = generateNewFileName($track);
 
         $track['filename_new'] = $newFilename;
@@ -333,6 +353,11 @@ if (!empty($tracks) && count($tracks) > 0) {
     require_once 'vendor/getID3/getid3/getid3.php';
 
     foreach ($tracks as &$track) {
+        if ($track['error'] === true) {
+            echo "\t".$track['filename'].' -> ERROR' . "\n";
+            continue;
+        }
+
         echo "\t".$track['filename_new'];
 
         $getID3 = new getID3;
