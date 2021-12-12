@@ -2,6 +2,12 @@
 
 error_reporting(E_ALL);
 
+require_once 'vendor/getID3/getid3/getid3.php';
+
+__autoloader();
+
+use Cocur\Slugify\Slugify;
+
 $url = 'https://www.beatport.com/track/-/';
 
 $baseDir = dirname(__FILE__).'/';
@@ -14,6 +20,21 @@ echo "\t".'Base directory: '.$baseDir."\n";
 echo "\t".'Cache directory: '.$cacheDir."\n";
 echo "\t".'Track directory: '.$trackDir."\n";
 echo "\n";
+
+/**
+ * @return void
+ */
+function __autoloader()
+{
+    spl_autoload_register(function ($class) {
+        $file = 'vendor/' . str_replace('\\', DIRECTORY_SEPARATOR, $class).'.php';
+        if (file_exists($file)) {
+            require $file;
+            return true;
+        }
+        return false;
+    });
+}
 
 /**
  * Read track directory
@@ -29,7 +50,7 @@ function readTracks($trackDir, $cacheDir)
         while ($file = readdir($hdl)) {
             $parts = pathinfo($file);
             if ($parts['extension'] === 'mp3') {
-                preg_match('/^([0-9]{7,9})_(.*)\.mp3$/', $parts['basename'], $matches);
+                preg_match('/^([0-9]{6,9})_(.*)\.mp3$/', $parts['basename'], $matches);
 
                 $track = [
                     'id' => $matches[1] ?? null,
@@ -118,14 +139,18 @@ function grabImage($url, $savePath)
  */
 function generateNewFileName($track)
 {
+    $slugify = new Slugify([
+        'separator' => ' ',
+        'lowercase' => false
+    ]);
+
     $newFilename =
         $track['id'].'_'.
-        $track['information']['artist'].'_'.
-        $track['information']['full_title'].'_'.
-        $track['information']['genre'].
+        $slugify->slugify($track['information']['artist']).'_'.
+        $slugify->slugify($track['information']['full_title']).'_'.
+        $slugify->slugify($track['information']['genre']).
         '.mp3';
 
-    $newFilename = str_replace(['/', '\\'], ' ', $newFilename);
     $newFilename = normalize($newFilename);
 
     return $newFilename;
@@ -162,10 +187,10 @@ if (!empty($tracks) && count($tracks) > 0) {
                 echo " -> downloaded";
             } else {
                 $track['error'] = true;
-                echo " -> ERROR";
+                echo "\e[0;31m -> ERROR\e[0m";
             }
         } else {
-            echo " -> already exists";
+            echo "\e[1;34m -> already exists\e[0m";
         }
 
         echo "\n";
@@ -184,7 +209,7 @@ if (!empty($tracks) && count($tracks) > 0) {
         $track['information'] = [];
 
         if ($track['error'] === true) {
-            echo 'ERROR' . "\n";
+            echo "\e[0;31mERROR\e[0m\n";
             continue;
         }
 
@@ -286,7 +311,7 @@ if (!empty($tracks) && count($tracks) > 0) {
         echo "\t".$track['filename'];
 
         if ($track['error'] === true) {
-            echo ' -> ERROR' . "\n";
+            echo "\e[0;31m -> ERROR\e[0m";
             continue;
         }
 
@@ -301,14 +326,14 @@ if (!empty($tracks) && count($tracks) > 0) {
             if ($status === true) {
                 $track['information']['cover'] = $coverPath;
 
-                echo ' -> image grabbed';
+                echo "\e[0;32m -> image grabbed\e[0m";
             } elseif ($status === false) {
-                echo '  -> already exists';
+                echo "\e[1;34m -> already exists\e[0m";
             } else {
-                echo '  -> image not grabbed and saved';
+                echo "\e[0;31m -> image not grabbed and saved\e[0m";
             }
         } else {
-            echo '  -> no cover information';
+            echo "\e[0;31m -> no cover information\e[0m";
         }
 
         echo "\n";
@@ -323,7 +348,7 @@ if (!empty($tracks) && count($tracks) > 0) {
         echo "\t".$track['filename'];
 
         if ($track['error'] === true) {
-            echo ' -> ERROR' . "\n";
+            echo "\e[0;31m -> ERROR\e[0m";
             continue;
         }
 
@@ -336,12 +361,12 @@ if (!empty($tracks) && count($tracks) > 0) {
 
         if (!file_exists($track['filepath_new'])) {
             if (rename($track['filepath'], $track['filepath_new'])) {
-                echo ' -> renamed';
+                echo "\e[0;32m -> renamed\e[0m";
             } else {
-                echo ' -> renaming went wrong';
+                echo "\e[0;31m -> renaming went wrong\e[0m";
             }
         } else {
-            echo ' -> file not renamed';
+            echo "\e[1;34m -> file not renamed\e[0m";
         }
 
         echo "\n";
@@ -350,11 +375,9 @@ if (!empty($tracks) && count($tracks) > 0) {
     // all is in our information bag, now it is time to write id3 tags
     echo 'Tag files'."\n";
 
-    require_once 'vendor/getID3/getid3/getid3.php';
-
     foreach ($tracks as &$track) {
         if ($track['error'] === true) {
-            echo "\t".$track['filename'].' -> ERROR' . "\n";
+            echo "\t".$track['filename']."\e[0;31m -> ERROR\e[0m\n";
             continue;
         }
 
@@ -410,9 +433,9 @@ if (!empty($tracks) && count($tracks) > 0) {
         $tagwriter->tag_data = $data;
 
         if ($tagwriter->WriteTags() === true) {
-            echo ' -> File tagged';
+            echo "\e[0;32m -> File tagged\e[0m";
         } else {
-            echo ' -> No tags written'."\n";
+            echo "\e[0;31m -> No tags written\e[0m\n";
             echo "\n";
             var_dump($tagwriter->errors);
             echo "\n";
@@ -423,9 +446,9 @@ if (!empty($tracks) && count($tracks) > 0) {
 
     echo "\n";
 } else {
-    echo 'No tracks available.'."\n";
+    echo "\e[1;34mNo tracks available.\e[0m\n";
     echo "\n";
 }
 
-echo 'DONE!'."\n";
+echo "\e[0;32mDONE!\e[0m\n";
 echo "\n";
