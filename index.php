@@ -50,7 +50,7 @@ function readTracks($trackDir, $cacheDir)
         while ($file = readdir($hdl)) {
             $parts = pathinfo($file);
             if ($parts['extension'] === 'mp3') {
-                preg_match('/^([0-9]{6,9})_(.*)\.mp3$/', $parts['basename'], $matches);
+                preg_match('/^([0-9]{4,9})_(.*)\.mp3$/', $parts['basename'], $matches);
 
                 $track = [
                     'id' => $matches[1] ?? null,
@@ -220,83 +220,158 @@ if (!empty($tracks) && count($tracks) > 0) {
         // create xpath
         $xpath = new DomXPath($dom);
 
-        // title & remix
-        $nodes = $xpath->query("//div[@class='interior-title']/h1");
-        foreach ($nodes as $i => $node) {
-            if ($i === 0) {
-                $track['information']['title'] = normalize($node->nodeValue);
-                echo '*';
-            } elseif ($i === 1) {
-                $track['information']['remix'] = normalize($node->nodeValue);
-                echo '*';
-            }
-        }
+        // has the new data structure
+        $nodes = $xpath->query("//script[@id='__NEXT_DATA__']");
 
-        // full title
-        if (!empty($track['information']['title']) && !empty($track['information']['remix'])) {
-            $track['information']['full_title'] = $track['information']['title'].' ('.$track['information']['remix'].')';
-            echo '*';
-        }
+        if ($nodes->length > 0) {
+            $data = json_decode((string)$nodes->item(0)->nodeValue, true);
+            $trackData = $data['props']['pageProps']['track'];
 
-        // artist
-        $nodes = $xpath->query("//div[@class='interior-track-artists']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            if ($i === 0) {
-                $track['information']['artist'] = normalize($node->nodeValue);
-                echo '*';
-            } elseif ($i === 1) {
-                $track['information']['remixer'] = normalize($node->nodeValue);
+            if (!empty($trackData['name'])) {
+                $track['information']['title'] = $trackData['name'];
                 echo '*';
             }
-        }
 
-        // album
-        $nodes = $xpath->query("//li[@class='interior-track-releases-artwork-container ec-item']/@data-ec-name");
-        foreach ($nodes as $i => $node) {
-            $track['information']['album'] = normalize($node->nodeValue);
-            echo '*';
-        }
+            if (!empty($trackData['mix_name'])) {
+                $track['information']['remix'] = $trackData['mix_name'];
+                echo '*';
+            }
 
-        // genre
-        $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-genre']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            $track['information']['genre'] = normalize($node->nodeValue);
-            echo '*';
-        }
+            $track['information']['artist'] = [];
+            if (is_array($trackData['artists']) && count($trackData['artists']) > 0) {
+                foreach ($trackData['artists'] as $artist) {
+                    $track['information']['artist'][] = $artist['name'];
+                }
 
-        // label
-        $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-labels']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            $track['information']['label'] = normalize($node->nodeValue);
-            echo '*';
-        }
+                echo '*';
+            }
 
-        // cover
-        $nodes = $xpath->query("//img[@class='interior-track-release-artwork']/@src");
-        foreach ($nodes as $i => $node) {
-            $track['information']['cover'] = normalize($node->nodeValue);
-            echo '*';
-        }
+            $track['information']['artist'] = implode(', ', $track['information']['artist']);
 
-        // release date
-        $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-released']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            $track['information']['release_date'] = normalize($node->nodeValue);
-            echo '*';
-        }
+            $track['information']['remixer'] = [];
+            if (is_array($trackData['remixers']) && count($trackData['remixers']) > 0) {
+                foreach ($trackData['remixers'] as $remixer) {
+                    $track['information']['remixer'][] = $remixer['name'];
+                }
 
-        // bpm
-        $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-bpm']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            $track['information']['bpm'] = normalize($node->nodeValue);
-            echo '*';
-        }
+                echo '*';
+            }
 
-        // key
-        $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-key']/span[@class='value']");
-        foreach ($nodes as $i => $node) {
-            $track['information']['key'] = normalize($node->nodeValue);
+            $track['information']['remixer'] = implode(', ', $track['information']['remixer']);
+
+            if (!empty($track['information']['title']) && !empty($track['information']['remix'])) {
+                $track['information']['full_title'] = $track['information']['title'] . ' (' . $track['information']['remix'] . ')';
+                echo '*';
+            }
+
+            $track['information']['album'] = '';
             echo '*';
+
+            if (!empty($trackData['genre'])) {
+                $track['information']['genre'] = $trackData['genre']['name'];
+                echo '*';
+            }
+            if (!empty($trackData['release']) && !empty($trackData['release']['label'])) {
+                $track['information']['label'] = $trackData['release']['label']['name'];
+                echo '*';
+            }
+            if (!empty($trackData['release']) && !empty($trackData['release']['image'])) {
+                $track['information']['cover'] = $trackData['release']['image']['uri'];
+                echo '*';
+            }
+            if (!empty($trackData['publish_date'])) {
+                $track['information']['release_date'] = $trackData['publish_date'];
+                echo '*';
+            }
+            if (!empty($trackData['bpm'])) {
+                $track['information']['bpm'] = $trackData['bpm'];
+                echo '*';
+            }
+            if (!empty($trackData['key'])) {
+                $track['information']['key'] = $trackData['key']['name'];
+                echo '*';
+            }
+        // Old structure
+        } else {
+            // title & remix
+            $nodes = $xpath->query("//div[@class='interior-title']/h1");
+
+            foreach ($nodes as $i => $node) {
+                if ($i === 0) {
+                    $track['information']['title'] = normalize($node->nodeValue);
+                    echo '*';
+                } elseif ($i === 1) {
+                    $track['information']['remix'] = normalize($node->nodeValue);
+                    echo '*';
+                }
+            }
+
+            // full title
+            if (!empty($track['information']['title']) && !empty($track['information']['remix'])) {
+                $track['information']['full_title'] = $track['information']['title'] . ' (' . $track['information']['remix'] . ')';
+                echo '*';
+            }
+
+            // artist
+            $nodes = $xpath->query("//div[@class='interior-track-artists']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                if ($i === 0) {
+                    $track['information']['artist'] = normalize($node->nodeValue);
+                    echo '*';
+                } elseif ($i === 1) {
+                    $track['information']['remixer'] = normalize($node->nodeValue);
+                    echo '*';
+                }
+            }
+
+            // album
+            $nodes = $xpath->query("//li[@class='interior-track-releases-artwork-container ec-item']/@data-ec-name");
+            foreach ($nodes as $i => $node) {
+                $track['information']['album'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // genre
+            $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-genre']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                $track['information']['genre'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // label
+            $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-labels']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                $track['information']['label'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // cover
+            $nodes = $xpath->query("//img[@class='interior-track-release-artwork']/@src");
+            foreach ($nodes as $i => $node) {
+                $track['information']['cover'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // release date
+            $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-released']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                $track['information']['release_date'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // bpm
+            $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-bpm']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                $track['information']['bpm'] = normalize($node->nodeValue);
+                echo '*';
+            }
+
+            // key
+            $nodes = $xpath->query("//li[@class='interior-track-content-item interior-track-key']/span[@class='value']");
+            foreach ($nodes as $i => $node) {
+                $track['information']['key'] = normalize($node->nodeValue);
+                echo '*';
+            }
         }
 
         echo "\n";

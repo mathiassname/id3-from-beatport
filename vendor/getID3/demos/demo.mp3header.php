@@ -11,6 +11,9 @@
 //                                                            ///
 /////////////////////////////////////////////////////////////////
 
+die('For security reasons, this demo has been disabled. It can be enabled by removing line '.__LINE__.' in demos/'.basename(__FILE__));
+
+
 if (!function_exists('PrintHexBytes')) {
 	function PrintHexBytes($string) {
 		$returnstring = '';
@@ -471,8 +474,8 @@ if (!function_exists('Dec2Bin')) {
 		}
 		$bytes[] = $number;
 		$binstring = '';
-		for ($i = 0; $i < count($bytes); $i++) {
-			$binstring = (($i == count($bytes) - 1) ? decbin($bytes[$i]) : str_pad(decbin($bytes[$i]), 8, '0', STR_PAD_LEFT)).$binstring;
+		foreach ($bytes as $i => $byte) {
+			$binstring = (($i == count($bytes) - 1) ? decbin($byte) : str_pad(decbin($byte), 8, '0', STR_PAD_LEFT)).$binstring;
 		}
 		return $binstring;
 	}
@@ -583,8 +586,8 @@ if (!function_exists('is_hash')) {
 		if (is_array($var)) {
 			$keys = array_keys($var);
 			$all_num = true;
-			for ($i = 0; $i < count($keys); $i++) {
-				if (is_string($keys[$i])) {
+			foreach ($keys as $key) {
+				if (is_string($key)) {
 					return true;
 				}
 			}
@@ -702,7 +705,7 @@ if (!function_exists('RoughTranslateUnicodeToASCII')) {
 				break;
 
 			case 3: // UTF-8 encoded Unicode. Terminated with $00.
-				$asciidata = utf8_decode($rawdata);
+				$asciidata = utf8_to_iso8859_1($rawdata);
 				break;
 
 			case 255: // Unicode, Big-Endian. Terminated with $00 00.
@@ -926,42 +929,39 @@ if (!function_exists('image_type_to_mime_type')) {
 	}
 }
 
-if (!function_exists('utf8_decode')) {
-	// PHP has this function built-in if it's configured with the --with-xml option
-	// This version of the function is only provided in case XML isn't installed
-	function utf8_decode($utf8text) {
-		// http://www.php.net/manual/en/function.utf8-encode.php
-		// bytes  bits  representation
-		//   1     7    0bbbbbbb
-		//   2     11   110bbbbb 10bbbbbb
-		//   3     16   1110bbbb 10bbbbbb 10bbbbbb
-		//   4     21   11110bbb 10bbbbbb 10bbbbbb 10bbbbbb
+function utf8_to_iso8859_1($utf8text) {
+	// http://www.php.net/manual/en/function.utf8-encode.php
+	// bytes  bits  representation
+	//   1     7    0bbbbbbb
+	//   2     11   110bbbbb 10bbbbbb
+	//   3     16   1110bbbb 10bbbbbb 10bbbbbb
+	//   4     21   11110bbb 10bbbbbb 10bbbbbb 10bbbbbb
 
-		$utf8length = strlen($utf8text);
-		$decodedtext = '';
-		for ($i = 0; $i < $utf8length; $i++) {
-			if ((ord($utf8text[$i]) & 0x80) == 0) {
-				$decodedtext .= $utf8text[$i];
-			} elseif ((ord($utf8text[$i]) & 0xF0) == 0xF0) {
+	$utf8length = strlen($utf8text);
+	$decodedtext = '';
+	for ($i = 0; $i < $utf8length; $i++) {
+		if ((ord($utf8text[$i]) & 0x80) == 0) {
+			$decodedtext .= $utf8text[$i];
+		} elseif ((ord($utf8text[$i]) & 0xF0) == 0xF0) {
+			$decodedtext .= '?';
+			$i += 3;
+		} elseif ((ord($utf8text[$i]) & 0xE0) == 0xE0) {
+			$decodedtext .= '?';
+			$i += 2;
+		} elseif ((ord($utf8text[$i]) & 0xC0) == 0xC0) {
+			//   2     11   110bbbbb 10bbbbbb
+			$decodedchar = Bin2Dec(substr(Dec2Bin(ord($utf8text[$i])), 3, 5).substr(Dec2Bin(ord($utf8text[($i + 1)])), 2, 6));
+			if ($decodedchar <= 255) {
+				$decodedtext .= chr($decodedchar);
+			} else {
 				$decodedtext .= '?';
-				$i += 3;
-			} elseif ((ord($utf8text[$i]) & 0xE0) == 0xE0) {
-				$decodedtext .= '?';
-				$i += 2;
-			} elseif ((ord($utf8text[$i]) & 0xC0) == 0xC0) {
-				//   2     11   110bbbbb 10bbbbbb
-				$decodedchar = Bin2Dec(substr(Dec2Bin(ord($utf8text[$i])), 3, 5).substr(Dec2Bin(ord($utf8text[($i + 1)])), 2, 6));
-				if ($decodedchar <= 255) {
-					$decodedtext .= chr($decodedchar);
-				} else {
-					$decodedtext .= '?';
-				}
-				$i += 1;
 			}
+			$i += 1;
 		}
-		return $decodedtext;
 	}
+	return $decodedtext;
 }
+
 
 if (!function_exists('DateMac2Unix')) {
 	function DateMac2Unix($macdate) {

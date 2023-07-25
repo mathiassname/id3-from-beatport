@@ -22,7 +22,7 @@ getID3() is released under multiple licenses. You may choose from the following 
 
 **getID3 Commercial License:**
 
-* [gCL](https://www.getid3.org/#gCL) (payment required)
+* [gCL](https://www.getid3.org/#gCL) (no longer available, existing licenses remain valid)
 
 * * *
 Copies of each of the above licenses are included in the `licenses/`
@@ -100,6 +100,7 @@ Reads & parses (to varying degrees):
   * OptimFROG
   * RKAU
   * Shorten
+  * Tom's lossless Audio Kompressor (TAK)
   * TTA
   * VOC
   * WAV (RIFF)
@@ -124,7 +125,7 @@ Reads & parses (to varying degrees):
   * SWF (Flash)
   * PhotoCD
 
-+ data: 
++ data:
   * ISO-9660 CD-ROM image (directory structure)
   * SZIP (limited support)
   * ZIP (directory structure)
@@ -151,7 +152,15 @@ Requirements
 * at least 4MB memory for PHP. 8MB or more is highly recommended.
   12MB is required with all modules loaded.
 
+Installation
+===
+The preferred method is via [composer](https://getcomposer.org/). Follow the installation [instructions](https://getcomposer.org/doc/00-intro.md) if you do not already have composer installed.
 
+Once composer is installed, execute the following command in your project root to install this library:
+
+```
+composer require james-heinrich/getid3
+```
 
 Usage
 ===
@@ -288,7 +297,7 @@ could essentially write it today with a one-line function:
 
 ``` php
 function getID3($filename) { return unpack('a3TAG/a30title/a30artist/a30album/a4year/a28comment/c1track/c1genreid', substr(file_get_contents($filename), -128)); }
-    
+
 ```
 
 
@@ -605,3 +614,4 @@ Reference material:
 * http://trac.musepack.net/trac/wiki/SV8Specification
 * http://wyday.com/cuesharp/specification.php
 * http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/Nikon.html
+* http://wiki.hydrogenaud.io/index.php?title=TAK
